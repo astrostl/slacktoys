@@ -18,6 +18,8 @@ slackpost() {
 
   if [[ $commit == true ]]; then
     curl -s "${slackurl}chat.postMessage?channel=${1}&text=${2}&token=${slacktoken}&username=Annoy-o-Tron&icon_emoji=:crab:" &> /dev/null
+  else
+    echo "would have sent $2 to $1"
   fi
 }
 
