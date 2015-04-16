@@ -17,7 +17,7 @@ slackpost() {
   fi    
 
   if [[ $commit == true ]]; then
-    curl -s curl "${slackurl}chat.postMessage?channel=${1}&text=${2}&token=${slacktoken}&username=Annoy-o-Tron&icon_emoji=:crab:" &> /dev/null
+    curl -s "${slackurl}chat.postMessage?channel=${1}&text=${2}&token=${slacktoken}&username=Annoy-o-Tron&icon_emoji=:crab:" &> /dev/null
   fi
 }
 
