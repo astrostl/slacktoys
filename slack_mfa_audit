@@ -1,0 +1,45 @@
+#!/bin/bash
+slackteam="${slackteam:-myteam.slack.com}"
+slacktoken="${slacktoken:-myapitoken}"
+slackchannel="${slackchannel:-myreportingchannel}"
+
+slackurl='https://slack.com/api/'
+slackusercount='0'
+slacksfacount='0'
+
+slackpost() {
+  if [[ $mode == annoy ]]; then
+    commit='true'
+  elif [[ $mode == report && $1 == C* ]]; then
+    commit='true'
+  else
+    commit='false'
+  fi    
+
+  if [[ $commit == true ]]; then
+    curl -s curl "${slackurl}chat.postMessage?channel=${1}&text=${2}&token=${slacktoken}&username=Annoy-o-Tron&icon_emoji=:crab:" &> /dev/null
+  fi
+}
+
+if (($# == 0)); then
+  echo "usage: $0 annoy|report|noop"
+  exit 1
+else
+  slackchannelid="$(curl -s ${slackurl}channels.list?token=${slacktoken}|jq -r ".channels[]|select(.name == \"${slackchannel}\")|.id")"
+  mode="$1"
+  while read -r id email mfa; do
+    slackusercount="$((slackusercount + 1))"
+    if [[ $mfa == false ]]; then
+      slacksfacount="$((slacksfacount + 1))"
+      slackpost "$id" "Friendly%20reminder%3A%20please%20visit%20https%3A%2F%2F${slackteam}%2Faccount%2Fsettings%20to%20configure%20%22Two%20factor%20authentication%22%20for%20your%20Slack%20account.%20%20It%20only%20needs%20to%20be%20done%20once%2C%20and%20greatly%20improves%20our%20account%20security!"
+    fi
+  done < <(curl -s "${slackurl}users.list?token=${slacktoken}"|jq -r '.members[] | select(.deleted == false) | select(.is_bot == false) | "\(.id) \(.profile.email) \(.has_2fa)"')
+fi
+
+if [[ $mode == annoy ]]; then
+  slackpost "$slackchannelid" "SLACK%20AUDIT%3A%20messaged%20all%20${slacksfacount}%20of%20the%20${slackusercount}%20non-bot%20Slack%20users%20that%20have%20not%20yet%20enabled%20two-factor%20authentication."
+elif [[ $mode == report ]]; then
+  slackpost "$slackchannelid" "SLACK%20AUDIT%3A%20${slacksfacount}%20of%20the%20${slackusercount}%20non-bot%20Slack%20users%20have%20not%20yet%20enabled%20two-factor%20authentication."
+else
+  echo "$slackusercount total users, $slacksfacount single-factor users"
+fi
